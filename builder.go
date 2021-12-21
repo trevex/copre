@@ -87,7 +87,7 @@ func (b *Builder) Env(opts ...EnvOption) *Builder {
 			}
 			// TODO: Support base64 and hex!
 			if val, ok := os.LookupEnv(key); ok {
-				return convertString(field.Type, val, &defaultConvertStringConfig) // TODO: make config configurable
+				return convertString(field.Type, val)
 			}
 			return nil, nil
 		})

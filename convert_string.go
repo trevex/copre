@@ -7,27 +7,18 @@ import (
 	"strings"
 )
 
+const (
+	arrayDelimiter = ","
+	mapDelimiter   = ","
+	mapKVDelimiter = "="
+)
+
 // TODO: Support time.Time and time.Duration?
-
-type convertStringConfig struct {
-	ArrayDelimiter string
-	MapDelimiter   string
-	MapKVDelimiter string
-}
-
-var defaultConvertStringConfig convertStringConfig = convertStringConfig{
-	ArrayDelimiter: ",",
-	MapDelimiter:   ",",
-	MapKVDelimiter: "=",
-}
 
 // Converts `input` string to type `t` or returns error if operation is not
 // possible. Supported target types are strings, bools, floats,
 // integers (incl. unsigned). Slices and maps of those types are supported as well.
-func convertString(t reflect.Type, input string, c *convertStringConfig) (interface{}, error) {
-	if c == nil {
-		return nil, fmt.Errorf("convertStringConfig missing")
-	}
+func convertString(t reflect.Type, input string) (interface{}, error) {
 	var (
 		v   interface{}
 		err error
@@ -45,10 +36,10 @@ func convertString(t reflect.Type, input string, c *convertStringConfig) (interf
 	case reflect.Float32, reflect.Float64:
 		v, err = strconv.ParseFloat(input, t.Bits())
 	case reflect.Slice:
-		elems := strings.Split(input, c.ArrayDelimiter)
+		elems := strings.Split(input, arrayDelimiter)
 		values := reflect.MakeSlice(t, len(elems), len(elems))
 		for i, elem := range elems {
-			convertedValue, err := convertString(t.Elem(), elem, c)
+			convertedValue, err := convertString(t.Elem(), elem)
 			if err != nil {
 				return nil, err
 			}
@@ -57,20 +48,20 @@ func convertString(t reflect.Type, input string, c *convertStringConfig) (interf
 		return values.Interface(), nil
 	case reflect.Map:
 		values := reflect.MakeMap(t)
-		keyValues := strings.Split(input, c.MapDelimiter)
+		keyValues := strings.Split(input, mapDelimiter)
 		for _, keyValueUnsplit := range keyValues {
-			keyValue := strings.Split(keyValueUnsplit, c.MapKVDelimiter)
+			keyValue := strings.Split(keyValueUnsplit, mapKVDelimiter)
 			if len(keyValue) != 2 {
 				return nil, fmt.Errorf("invalid key value item provided: %s", keyValueUnsplit)
 			}
 			key := reflect.New(t.Key()).Elem()
-			keyData, err := convertString(key.Type(), keyValue[0], c)
+			keyData, err := convertString(key.Type(), keyValue[0])
 			if err != nil {
 				return nil, err
 			}
 			key.Set(reflect.ValueOf(keyData))
 			value := reflect.New(t.Elem()).Elem()
-			valueData, err := convertString(value.Type(), keyValue[1], c)
+			valueData, err := convertString(value.Type(), keyValue[1])
 			if err != nil {
 				return nil, err
 			}

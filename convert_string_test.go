@@ -28,7 +28,7 @@ func TestConvertScalars(t *testing.T) {
 	}
 	for _, expected := range conversions {
 		t.Logf("converting to %T", expected)
-		converted, err := convertString(reflect.TypeOf(expected), input, &defaultConvertStringConfig)
+		converted, err := convertString(reflect.TypeOf(expected), input)
 		assert.NoError(err)
 		assert.Equal(expected, converted)
 	}
@@ -55,7 +55,7 @@ func TestConvertSlices(t *testing.T) {
 	}
 	for _, expected := range conversions {
 		t.Logf("converting to %T", expected)
-		converted, err := convertString(reflect.TypeOf(expected), input, &defaultConvertStringConfig)
+		converted, err := convertString(reflect.TypeOf(expected), input)
 		assert.NoError(err)
 		assert.Equal(expected, converted)
 	}
@@ -73,7 +73,7 @@ func TestConvertMaps(t *testing.T) {
 	}
 	for _, expected := range conversions {
 		t.Logf("converting to %T", expected)
-		converted, err := convertString(reflect.TypeOf(expected), input, &defaultConvertStringConfig)
+		converted, err := convertString(reflect.TypeOf(expected), input)
 		assert.NoError(err)
 		assert.Equal(expected, converted)
 	}
@@ -86,33 +86,7 @@ func TestConvertErrors(t *testing.T) {
 		struct{}{},
 	}
 	for _, expected := range conversions {
-		_, err := convertString(reflect.TypeOf(expected), input, &defaultConvertStringConfig)
+		_, err := convertString(reflect.TypeOf(expected), input)
 		assert.Error(err)
-	}
-}
-
-func TestConvertMissingConfigError(t *testing.T) {
-	_, err := convertString(reflect.TypeOf(""), "", nil)
-	assert.Error(t, err)
-}
-
-func TestConvertAlternativeConfig(t *testing.T) {
-	assert := assert.New(t)
-	input := "0:1;1:0"
-	conversions := []interface{}{
-		map[string]int{"0": 1, "1": 0},
-		map[bool]bool{false: true, true: false},
-		map[uint64]string{0: "1", 1: "0"},
-		[]string{"0", "1;1", "0"},
-	}
-	config := &convertStringConfig{
-		ArrayDelimiter: ":",
-		MapDelimiter:   ";",
-		MapKVDelimiter: ":",
-	}
-	for _, expected := range conversions {
-		converted, err := convertString(reflect.TypeOf(expected), input, config)
-		assert.NoError(err)
-		assert.Equal(expected, converted)
 	}
 }
