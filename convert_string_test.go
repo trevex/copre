@@ -1,8 +1,10 @@
 package config
 
 import (
+	"net"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -73,6 +75,33 @@ func TestConvertMaps(t *testing.T) {
 	}
 	for _, expected := range conversions {
 		t.Logf("converting to %T", expected)
+		converted, err := convertString(reflect.TypeOf(expected), input)
+		assert.NoError(err)
+		assert.Equal(expected, converted)
+	}
+}
+
+func TestConvertNetTypes(t *testing.T) {
+	assert := assert.New(t)
+	conversions := map[string]interface{}{
+		"127.0.0.1":      net.IPv4(127, 0, 0, 1),
+		"255.255.255.0":  net.IPv4Mask(255, 255, 255, 0),
+		"192.168.0.0/16": net.IPNet{IP: net.IPv4(192, 168, 0, 0), Mask: net.IPv4Mask(255, 255, 0, 0)},
+	}
+	for input, expected := range conversions {
+		t.Logf("converting to %T", expected)
+		converted, err := convertString(reflect.TypeOf(expected), input)
+		assert.NoError(err)
+		assert.Equal(expected, converted)
+	}
+}
+
+func TestConvertTimeDuration(t *testing.T) {
+	assert := assert.New(t)
+	conversions := map[string]interface{}{
+		"5s": 5 * time.Second,
+	}
+	for input, expected := range conversions {
 		converted, err := convertString(reflect.TypeOf(expected), input)
 		assert.NoError(err)
 		assert.Equal(expected, converted)

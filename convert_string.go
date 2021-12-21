@@ -2,9 +2,13 @@ package config
 
 import (
 	"fmt"
+	"net"
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/spf13/pflag"
 )
 
 const (
@@ -16,14 +20,51 @@ const (
 // TODO: Support time.Time and time.Duration?
 
 // Converts `input` string to type `t` or returns error if operation is not
-// possible. Supported target types are strings, bools, floats,
-// integers (incl. unsigned). Slices and maps of those types are supported as well.
+// possible. Type `t` needs to be NOT a pointer kind!
 func convertString(t reflect.Type, input string) (interface{}, error) {
+	if t.Kind() == reflect.Ptr {
+		return nil, fmt.Errorf("no pointer kinds allowed")
+	}
+
+	// Handle supported net-types
+	if t.PkgPath() == "net" {
+		switch t.Name() {
+		case "IP":
+			ip := net.ParseIP(input)
+			if ip == nil {
+				return nil, fmt.Errorf("unable to parse '%s' as net.IP", input)
+			}
+			return ip, nil
+		case "IPMask":
+			ipMask := pflag.ParseIPv4Mask(input)
+			if ipMask == nil {
+				return nil, fmt.Errorf("unable to parse '%s' as net.IPMast", input)
+			}
+			return ipMask, nil
+		case "IPNet":
+			ip, ipNet, err := net.ParseCIDR(input)
+			if err != nil {
+				return nil, fmt.Errorf("unable to parse '%s' as net.IPNet, failed with: %w", input, err)
+			}
+			ipNet.IP = ip
+			return *ipNet, nil
+		}
+	}
+
+	// Parse time.Duration
+	if t.PkgPath() == "time" && t.Name() == "Duration" {
+		d, err := time.ParseDuration(input)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse '%s' as time.Duration, failed with: %w", input, err)
+		}
+		return d, nil
+	}
+
+	// Convert to in-built types
 	var (
 		v   interface{}
 		err error
 	)
-
 	switch t.Kind() {
 	case reflect.String:
 		v = input
