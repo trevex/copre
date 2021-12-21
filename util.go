@@ -97,12 +97,12 @@ func convertString(t reflect.Type, input string, c *convertStringConfig) (interf
 
 type fieldMapper func(path []string, field reflect.StructField) (interface{}, error)
 
-// populateStruct will populate fields with the values returned from mapper.
+// visitStruct will populate fields with the values returned from mapper.
 // dst is expected to be pointer!
-func populateStruct(dst interface{}, mapper fieldMapper) error {
+func visitStruct(dst interface{}, mapper fieldMapper) error {
 	v := reflect.ValueOf(dst).Elem()
 	src := map[string]interface{}{} // will be mapFields/visit dst, but merge src
-	if err := mapFields([]string{}, v, src, mapper); err != nil {
+	if err := visitFields([]string{}, v, src, mapper); err != nil {
 		return err
 	}
 	if err := mergo.Map(dst, src, mergo.WithOverride); err != nil {
@@ -111,7 +111,7 @@ func populateStruct(dst interface{}, mapper fieldMapper) error {
 	return nil
 }
 
-func mapFields(path []string, value reflect.Value, dst map[string]interface{}, mapper fieldMapper) error {
+func visitFields(path []string, value reflect.Value, dst map[string]interface{}, mapper fieldMapper) error {
 	valueType := value.Type()
 	for i := 0; i < value.NumField(); i++ {
 		field := value.Field(i)
@@ -127,7 +127,7 @@ func mapFields(path []string, value reflect.Value, dst map[string]interface{}, m
 		// If struct, call mapFields again
 		if field.Kind() == reflect.Struct {
 			fieldDst := map[string]interface{}{}
-			err := mapFields(fieldPath, field, fieldDst, mapper)
+			err := visitFields(fieldPath, field, fieldDst, mapper)
 			if err != nil {
 				return err
 			}
