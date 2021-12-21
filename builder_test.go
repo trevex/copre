@@ -11,6 +11,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// TODO: including struct preset we have 4! = 24 combinations to test
 type T1 struct {
 	A string `yaml:"a" env:"A" flag:"a"`
 	B string `yaml:"b" env:"B" flag:"b"`
