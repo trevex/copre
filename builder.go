@@ -146,12 +146,6 @@ func (b *Builder) Build() error {
 	if v.Kind() != reflect.Struct {
 		return fmt.Errorf("Expected destination to point to struct not %s", v.Kind())
 	}
-	// Loop twice over loaders, one preprocess pass, then the real one
-	// for _, l := range b.loaders {
-	// 	if err := l.Preprocess(b.dst); err != nil {
-	// 		return err
-	// 	}
-	// }
 	for _, l := range b.loaders {
 		if err := l.Process(b.dst); err != nil {
 			return err

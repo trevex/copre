@@ -6,6 +6,7 @@ import (
 	"github.com/imdario/mergo"
 )
 
+// fieldMapper is called for each field, must return values
 type fieldMapper func(path []string, field reflect.StructField) (interface{}, error)
 
 // visitStruct will populate fields with the values returned from mapper.
@@ -28,8 +29,14 @@ func visitFields(path []string, value reflect.Value, dst map[string]interface{},
 		field := value.Field(i)
 		// If pointer, dereference
 		if field.Kind() == reflect.Ptr {
-			// TODO: Do we have to check IsNil and set zero value although
-			//       we are just traversing? => Test this!
+			// For pointers that are nil we try to set the default value
+			if field.IsNil() {
+				if !field.CanSet() {
+					continue
+				}
+				ptr := reflect.New(field.Type().Elem())
+				field.Set(ptr)
+			}
 			field = field.Elem()
 		}
 		structField := valueType.Field(i)
