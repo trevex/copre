@@ -1,6 +1,6 @@
 # `copre`
 
-`copre` is a small library for loading **co**nfiguration from multiple sources with a user-defined **pre**cedence. The sources include [`pflags`](https://github.com/spf13/pflag), environment-variables and files.
+`copre` is a small library for loading **co**nfiguration from multiple sources with a user-defined **pre**cedence. The sources include [`pflags`](https://github.com/spf13/pflag), environment-variables and files (bring your own file-format).
 
 ## Why
 
