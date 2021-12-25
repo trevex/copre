@@ -32,7 +32,7 @@ func TestBuilderPrecendence(t *testing.T) {
 		Input    T1
 		Expected T1
 	}{
-		"file>flag>env": {
+		"file<flag<env": {
 			Yaml: `
 a: "file"
 b: "file"
@@ -55,10 +55,56 @@ c: "file"
 				D: "struct",
 			},
 		},
+		"env<file<flag": {
+			EnvVars: map[string]string{
+				"A": "env",
+				"B": "env",
+				"C": "env",
+			},
+			Yaml: `
+b: "file"
+c: "file"
+`,
+			Flags: map[string]string{
+				"c": "flag",
+			},
+			Input: T1{
+				D: "struct",
+			},
+			Expected: T1{
+				A: "env",
+				B: "file",
+				C: "flag",
+				D: "struct",
+			},
+		},
+		"flag<env<file": {
+			Flags: map[string]string{
+				"a": "flag",
+				"b": "flag",
+				"c": "flag",
+			},
+			EnvVars: map[string]string{
+				"B": "env",
+				"C": "env",
+			},
+			Yaml: `
+c: "file"
+`,
+			Input: T1{
+				D: "struct",
+			},
+			Expected: T1{
+				A: "flag",
+				B: "env",
+				C: "file",
+				D: "struct",
+			},
+		},
 	}
 
 	for precendence, test := range tests {
-		buildOrder := strings.Split(precendence, ">")
+		buildOrder := strings.Split(precendence, "<")
 		t.Run(precendence, func(t *testing.T) {
 			// Create config file
 			tf, err := ioutil.TempFile("", "test")
@@ -75,8 +121,9 @@ c: "file"
 			}
 			_ = f.Parse(args)
 			// Setup environment
+			prefix := strings.ToUpper(strings.ReplaceAll(precendence, "<", "_"))
 			for key, value := range test.EnvVars {
-				os.Setenv(key, value)
+				os.Setenv(prefix+"_"+key, value)
 			}
 			result := test.Input
 			b := NewBuilder(&result)
@@ -86,7 +133,7 @@ c: "file"
 				} else if phase == "flag" {
 					b.FlagSet(f)
 				} else {
-					b.Env()
+					b.Env(WithPrefix(prefix))
 				}
 			}
 			err = b.Build()
