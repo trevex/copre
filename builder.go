@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/imdario/mergo"
 	"github.com/spf13/pflag"
 )
 
@@ -120,8 +121,7 @@ func (b *Builder) FlagSet(flags *pflag.FlagSet, opts ...FlagSetOption) *Builder 
 				return nil, nil
 			}
 			if val, ok := flagMap[key]; ok {
-				// TODO: Handle type conversion from underlying type to field.Type()?
-				//       Or at least inform user if they are mismatched?
+				// Mismatch is handled by visitStruct
 				return val, nil
 			}
 			return nil, nil
@@ -147,8 +147,11 @@ func (b *Builder) Build() error {
 		return fmt.Errorf("Expected destination to point to struct not %s", v.Kind())
 	}
 	for _, l := range b.loaders {
-		// TODO: Should copy and merge dst
-		if err := l.Process(b.dst); err != nil {
+		dst := reflect.New(v.Type()).Interface()
+		if err := l.Process(dst); err != nil {
+			return err
+		}
+		if err := mergo.Merge(b.dst, dst, mergo.WithOverride); err != nil {
 			return err
 		}
 	}

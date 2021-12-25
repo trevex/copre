@@ -1,8 +1,10 @@
 package config
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/spf13/pflag"
@@ -23,33 +25,85 @@ func TestBuilderPrecendence(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	// Create config file
-	t1yaml := `
+	tests := map[string]struct {
+		Yaml     string
+		Flags    map[string]string
+		EnvVars  map[string]string
+		Input    T1
+		Expected T1
+	}{
+		"file>flag>env": {
+			Yaml: `
 a: "file"
 b: "file"
 c: "file"
-`
-	tf, err := ioutil.TempFile("", "test")
-	require.NoError(err)
-	defer os.Remove(tf.Name())
-	_, err = tf.WriteString(t1yaml)
-	require.NoError(err)
-	// Prepare FlagSet
+`,
+			Flags: map[string]string{
+				"b": "flag",
+				"c": "flag",
+			},
+			EnvVars: map[string]string{
+				"C": "env",
+			},
+			Input: T1{
+				D: "struct",
+			},
+			Expected: T1{
+				A: "file",
+				B: "flag",
+				C: "env",
+				D: "struct",
+			},
+		},
+	}
+
+	for precendence, test := range tests {
+		buildOrder := strings.Split(precendence, ">")
+		t.Run(precendence, func(t *testing.T) {
+			// Create config file
+			tf, err := ioutil.TempFile("", "test")
+			require.NoError(err)
+			defer os.Remove(tf.Name())
+			_, err = tf.WriteString(test.Yaml)
+			require.NoError(err)
+			// Prepare FlagSet
+			f := pflag.NewFlagSet("test", pflag.ContinueOnError)
+			args := []string{}
+			for key, value := range test.Flags {
+				f.String(key, "", "")
+				args = append(args, fmt.Sprintf("--%s=%s", key, value))
+			}
+			_ = f.Parse(args)
+			// Setup environment
+			for key, value := range test.EnvVars {
+				os.Setenv(key, value)
+			}
+			result := test.Input
+			b := NewBuilder(&result)
+			for _, phase := range buildOrder {
+				if phase == "file" {
+					b.File(tf.Name(), yaml.Unmarshal)
+				} else if phase == "flag" {
+					b.FlagSet(f)
+				} else {
+					b.Env()
+				}
+			}
+			err = b.Build()
+			require.NoError(err)
+			assert.Equal(test.Expected, result)
+		})
+	}
+}
+
+func TestBuilderFlagsetMismatch(t *testing.T) {
+	require := require.New(t)
 	f := pflag.NewFlagSet("test", pflag.ContinueOnError)
-	f.String("b", "", "")
-	f.String("c", "", "")
-	_ = f.Parse([]string{"--b=flag", "--c=flag"})
-	// Setup environment
-	os.Setenv("C", "env")
-	// Build config and check expected
+	f.Int32("a", 0, "")
+	_ = f.Parse([]string{"--a=1"})
 	t1 := T1{D: "struct"}
-	err = NewBuilder(&t1).
-		File(tf.Name(), yaml.Unmarshal).
+	err := NewBuilder(&t1).
 		FlagSet(f).
-		Env().Build()
-	require.NoError(err)
-	assert.Equal("file", t1.A)
-	assert.Equal("flag", t1.B)
-	assert.Equal("env", t1.C)
-	assert.Equal("struct", t1.D)
+		Build()
+	require.Error(err)
 }

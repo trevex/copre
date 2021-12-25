@@ -17,8 +17,6 @@ const (
 	mapKVDelimiter = "="
 )
 
-// TODO: Support time.Time and time.Duration?
-
 // Converts `input` string to type `t` or returns error if operation is not
 // possible. Type `t` needs to be NOT a pointer kind!
 func convertString(t reflect.Type, input string) (interface{}, error) {

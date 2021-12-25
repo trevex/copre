@@ -17,9 +17,10 @@ func TestVisitStructsInStructs(t *testing.T) {
 	}{}
 	expectedPaths := [][]string{{"A"}, {"B", "C"}}
 	paths := [][]string{}
-	visitStruct(&dst, func(path []string, field reflect.StructField) (interface{}, error) {
+	err := visitStruct(&dst, func(path []string, field reflect.StructField) (interface{}, error) {
 		paths = append(paths, path)
 		return nil, nil
 	})
+	assert.NoError(err)
 	assert.Equal(expectedPaths, paths)
 }
