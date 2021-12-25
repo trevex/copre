@@ -108,6 +108,20 @@ func TestConvertTimeDuration(t *testing.T) {
 	}
 }
 
+func TestConvertHexBase64(t *testing.T) {
+	assert := assert.New(t)
+	conversions := map[string]interface{}{
+		"FF":   convertBytesHexMarker{255},
+		"MQ==": convertBytesBase64Marker{49},
+	}
+	for input, expected := range conversions {
+		converted, err := convertString(reflect.TypeOf(expected), input)
+		assert.NoError(err)
+		// The types don't match and we only have a single element, so let's use ElementsMatch as workaround
+		assert.ElementsMatch(expected, converted)
+	}
+}
+
 func TestConvertErrors(t *testing.T) {
 	assert := assert.New(t)
 	input := "1"

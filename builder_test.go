@@ -13,8 +13,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// TODO: including struct preset we have 4! = 24 combinations to test
-type T1 struct {
+type ConfigAllSources struct {
 	A string `yaml:"a" env:"A" flag:"a"`
 	B string `yaml:"b" env:"B" flag:"b"`
 	C string `yaml:"c" env:"C" flag:"c"`
@@ -29,8 +28,8 @@ func TestBuilderPrecendence(t *testing.T) {
 		Yaml     string
 		Flags    map[string]string
 		EnvVars  map[string]string
-		Input    T1
-		Expected T1
+		Input    ConfigAllSources
+		Expected ConfigAllSources
 	}{
 		"file<flag<env": {
 			Yaml: `
@@ -45,10 +44,10 @@ c: "file"
 			EnvVars: map[string]string{
 				"C": "env",
 			},
-			Input: T1{
+			Input: ConfigAllSources{
 				D: "struct",
 			},
-			Expected: T1{
+			Expected: ConfigAllSources{
 				A: "file",
 				B: "flag",
 				C: "env",
@@ -68,10 +67,10 @@ c: "file"
 			Flags: map[string]string{
 				"c": "flag",
 			},
-			Input: T1{
+			Input: ConfigAllSources{
 				D: "struct",
 			},
-			Expected: T1{
+			Expected: ConfigAllSources{
 				A: "env",
 				B: "file",
 				C: "flag",
@@ -91,10 +90,10 @@ c: "file"
 			Yaml: `
 c: "file"
 `,
-			Input: T1{
+			Input: ConfigAllSources{
 				D: "struct",
 			},
-			Expected: T1{
+			Expected: ConfigAllSources{
 				A: "flag",
 				B: "env",
 				C: "file",
@@ -148,9 +147,42 @@ func TestBuilderFlagsetMismatch(t *testing.T) {
 	f := pflag.NewFlagSet("test", pflag.ContinueOnError)
 	f.Int32("a", 0, "")
 	_ = f.Parse([]string{"--a=1"})
-	t1 := T1{D: "struct"}
-	err := NewBuilder(&t1).
+	result := ConfigAllSources{D: "struct"}
+	err := NewBuilder(&result).
 		FlagSet(f).
 		Build()
 	require.Error(err)
+}
+
+type ConfigEnvOptions struct {
+	A []byte `env:"A"`
+	B []byte `env:"B,hex"`
+	C []byte `env:"C,base64"`
+}
+
+func TestBuilderEnvOptions(t *testing.T) {
+	require := require.New(t)
+	expected := ConfigEnvOptions{
+		A: []byte{1, 1},
+		B: []byte{255},
+		C: []byte("1"),
+	}
+	prefix := "ENV_OPTIONS"
+	os.Setenv(prefix+"_A", "1,1")
+	os.Setenv(prefix+"_B", "FF")
+	os.Setenv(prefix+"_C", "MQ==")
+	result := ConfigEnvOptions{}
+	err := NewBuilder(&result).Env(WithPrefix(prefix)).Build()
+	require.NoError(err)
+	require.Equal(expected, result)
+}
+
+type ConfigEnvOptionsUnsupported struct {
+	A string `env:"A,hex"`
+}
+
+func TestBuilderEnvOptionUnsupported(t *testing.T) {
+	result := ConfigEnvOptionsUnsupported{}
+	err := NewBuilder(&result).Env().Build()
+	require.Error(t, err)
 }

@@ -1,6 +1,8 @@
 package config
 
 import (
+	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"net"
 	"reflect"
@@ -17,11 +19,25 @@ const (
 	mapKVDelimiter = "="
 )
 
+type convertBytesHexMarker []byte
+
+type convertBytesBase64Marker []byte
+
 // Converts `input` string to type `t` or returns error if operation is not
 // possible. Type `t` needs to be NOT a pointer kind!
 func convertString(t reflect.Type, input string) (interface{}, error) {
 	if t.Kind() == reflect.Ptr {
 		return nil, fmt.Errorf("no pointer kinds allowed")
+	}
+
+	// Let's handle the marker structs
+	if strings.Contains(t.PkgPath(), "copre") {
+		switch t.Name() {
+		case "convertBytesHexMarker":
+			return hex.DecodeString(input)
+		case "convertBytesBase64Marker":
+			return base64.StdEncoding.DecodeString(input)
+		}
 	}
 
 	// Handle supported net-types

@@ -86,9 +86,22 @@ func (b *Builder) Env(opts ...EnvOption) *Builder {
 			if o.prefix != "" {
 				key = fmt.Sprintf("%s_%s", o.prefix, key)
 			}
-			// TODO: Support base64 and hex!
+
+			targetType := field.Type
+			if len(params) > 1 { // If options are set, let's handle them
+				if targetType.Kind() == reflect.Slice && targetType.Elem().Kind() == reflect.Uint8 {
+					if params[1] == "hex" {
+						targetType = reflect.TypeOf(convertBytesHexMarker{})
+					} else if params[1] == "base64" {
+						targetType = reflect.TypeOf(convertBytesBase64Marker{})
+					}
+				} else {
+					return nil, fmt.Errorf("unsupported option '%s' for type '%s'", params[1], targetType.String())
+				}
+			}
+
 			if val, ok := os.LookupEnv(key); ok {
-				return convertString(field.Type, val)
+				return convertString(targetType, val)
 			}
 			return nil, nil
 		})
