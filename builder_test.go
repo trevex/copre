@@ -157,7 +157,7 @@ func TestBuilderFlagsetMismatch(t *testing.T) {
 type ConfigEnvOptions struct {
 	A []byte `env:"A"`
 	B []byte `env:"B,hex"`
-	C []byte `env:"C,base64"`
+	C []byte `env:",base64"`
 }
 
 func TestBuilderEnvOptions(t *testing.T) {
@@ -172,7 +172,7 @@ func TestBuilderEnvOptions(t *testing.T) {
 	os.Setenv(prefix+"_B", "FF")
 	os.Setenv(prefix+"_C", "MQ==")
 	result := ConfigEnvOptions{}
-	err := NewBuilder(&result).Env(WithPrefix(prefix)).Build()
+	err := NewBuilder(&result).Env(WithPrefix(prefix), ComputeEnvKey(UpperSnakeCase)).Build()
 	require.NoError(err)
 	require.Equal(expected, result)
 }

@@ -67,37 +67,38 @@ func (b *Builder) File(filepath string, unmarshal UnmarshalFunc, opts ...FileOpt
 
 func (b *Builder) Env(opts ...EnvOption) *Builder {
 	o := envOptions{
-		prefix: "",
+		prefix:    "",
+		keyGetter: func(s []string) string { return "" },
 	}
 	for _, opt := range opts {
 		opt.apply(&o)
 	}
 	return b.Loader(LoaderFunc(func(dst interface{}) error {
 		return visitStruct(dst, func(path []string, field reflect.StructField) (interface{}, error) {
-			tag, ok := field.Tag.Lookup("env")
-			if !ok {
-				return nil, nil
-			}
-			params := strings.Split(tag, ",")
-			key := params[0]
-			if key == "" {
-				return nil, nil
-			}
-			if o.prefix != "" {
-				key = fmt.Sprintf("%s_%s", o.prefix, key)
+			key := o.keyGetter(path)
+			targetType := field.Type
+			if tag, ok := field.Tag.Lookup("env"); ok {
+				params := strings.Split(tag, ",")
+				// Only set key if provided
+				if params[0] != "" {
+					key = params[0]
+				}
+
+				if len(params) > 1 { // If options are set, let's handle them
+					if targetType.Kind() == reflect.Slice && targetType.Elem().Kind() == reflect.Uint8 {
+						if params[1] == "hex" {
+							targetType = reflect.TypeOf(convertBytesHexMarker{})
+						} else if params[1] == "base64" {
+							targetType = reflect.TypeOf(convertBytesBase64Marker{})
+						}
+					} else {
+						return nil, fmt.Errorf("unsupported option '%s' for type '%s'", params[1], targetType.String())
+					}
+				}
 			}
 
-			targetType := field.Type
-			if len(params) > 1 { // If options are set, let's handle them
-				if targetType.Kind() == reflect.Slice && targetType.Elem().Kind() == reflect.Uint8 {
-					if params[1] == "hex" {
-						targetType = reflect.TypeOf(convertBytesHexMarker{})
-					} else if params[1] == "base64" {
-						targetType = reflect.TypeOf(convertBytesBase64Marker{})
-					}
-				} else {
-					return nil, fmt.Errorf("unsupported option '%s' for type '%s'", params[1], targetType.String())
-				}
+			if o.prefix != "" {
+				key = fmt.Sprintf("%s_%s", o.prefix, key)
 			}
 
 			if val, ok := os.LookupEnv(key); ok {

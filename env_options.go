@@ -1,7 +1,8 @@
 package config
 
 type envOptions struct {
-	prefix string
+	prefix    string
+	keyGetter func([]string) string
 }
 
 type EnvOption interface {
@@ -17,5 +18,11 @@ func (c envOptionAdapter) apply(l *envOptions) {
 func WithPrefix(prefix string) EnvOption {
 	return envOptionAdapter(func(o *envOptions) {
 		o.prefix = prefix
+	})
+}
+
+func ComputeEnvKey(keyGetter func([]string) string) EnvOption {
+	return envOptionAdapter(func(o *envOptions) {
+		o.keyGetter = keyGetter
 	})
 }
