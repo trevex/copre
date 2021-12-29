@@ -155,7 +155,7 @@ func TestBuilderFlagsetMismatch(t *testing.T) {
 }
 
 type ConfigEnvOptions struct {
-	A []byte `env:"A"`
+	A []byte `env:"NOPREFIX_A,noprefix"`
 	B []byte `env:"B,hex"`
 	C []byte `env:",base64"`
 }
@@ -168,7 +168,7 @@ func TestBuilderEnvOptions(t *testing.T) {
 		C: []byte("1"),
 	}
 	prefix := "ENV_OPTIONS"
-	os.Setenv(prefix+"_A", "1,1")
+	os.Setenv("NOPREFIX_A", "1,1")
 	os.Setenv(prefix+"_B", "FF")
 	os.Setenv(prefix+"_C", "MQ==")
 	result := ConfigEnvOptions{}

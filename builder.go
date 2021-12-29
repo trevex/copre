@@ -75,6 +75,7 @@ func (b *Builder) Env(opts ...EnvOption) *Builder {
 	}
 	return b.Loader(LoaderFunc(func(dst interface{}) error {
 		return visitStruct(dst, func(path []string, field reflect.StructField) (interface{}, error) {
+			noPrefix := false
 			key := o.keyGetter(path)
 			targetType := field.Type
 			if tag, ok := field.Tag.Lookup("env"); ok {
@@ -85,19 +86,26 @@ func (b *Builder) Env(opts ...EnvOption) *Builder {
 				}
 
 				if len(params) > 1 { // If options are set, let's handle them
-					if targetType.Kind() == reflect.Slice && targetType.Elem().Kind() == reflect.Uint8 {
-						if params[1] == "hex" {
-							targetType = reflect.TypeOf(convertBytesHexMarker{})
-						} else if params[1] == "base64" {
-							targetType = reflect.TypeOf(convertBytesBase64Marker{})
+					for _, param := range params[1:] {
+						// Check options for byte arrays
+						if param == "hex" || param == "base64" {
+							if targetType.Kind() != reflect.Slice || targetType.Elem().Kind() != reflect.Uint8 {
+								return nil, fmt.Errorf("unsupported option '%s' for type '%s'", params[1], targetType.String())
+							}
+							if param == "hex" {
+								targetType = reflect.TypeOf(convertBytesHexMarker{})
+							} else if param == "base64" {
+								targetType = reflect.TypeOf(convertBytesBase64Marker{})
+							}
 						}
-					} else {
-						return nil, fmt.Errorf("unsupported option '%s' for type '%s'", params[1], targetType.String())
+						if param == "noprefix" {
+							noPrefix = true
+						}
 					}
 				}
 			}
 
-			if o.prefix != "" {
+			if o.prefix != "" && !noPrefix {
 				key = fmt.Sprintf("%s_%s", o.prefix, key)
 			}
 
