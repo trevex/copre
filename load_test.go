@@ -125,17 +125,17 @@ c: "file"
 				os.Setenv(prefix+"_"+key, value)
 			}
 			result := test.Input
-			b := NewBuilder(&result)
+			loaders := []Loader{}
 			for _, phase := range buildOrder {
 				if phase == "file" {
-					b.File(tf.Name(), yaml.Unmarshal)
+					loaders = append(loaders, File(tf.Name(), yaml.Unmarshal))
 				} else if phase == "flag" {
-					b.FlagSet(f)
+					loaders = append(loaders, FlagSet(f))
 				} else {
-					b.Env(WithPrefix(prefix))
+					loaders = append(loaders, Env(WithPrefix(prefix)))
 				}
 			}
-			err = b.Build()
+			err = Load(&result, loaders...)
 			require.NoError(err)
 			assert.Equal(test.Expected, result)
 		})
@@ -148,9 +148,7 @@ func TestBuilderFlagsetMismatch(t *testing.T) {
 	f.Int32("a", 0, "")
 	_ = f.Parse([]string{"--a=1"})
 	result := ConfigAllSources{D: "struct"}
-	err := NewBuilder(&result).
-		FlagSet(f).
-		Build()
+	err := Load(&result, FlagSet(f))
 	require.Error(err)
 }
 
@@ -172,7 +170,7 @@ func TestBuilderEnvOptions(t *testing.T) {
 	os.Setenv(prefix+"_B", "FF")
 	os.Setenv(prefix+"_C", "MQ==")
 	result := ConfigEnvOptions{}
-	err := NewBuilder(&result).Env(WithPrefix(prefix), ComputeEnvKey(UpperSnakeCase)).Build()
+	err := Load(&result, Env(WithPrefix(prefix), ComputeEnvKey(UpperSnakeCase)))
 	require.NoError(err)
 	require.Equal(expected, result)
 }
@@ -183,6 +181,6 @@ type ConfigEnvOptionsUnsupported struct {
 
 func TestBuilderEnvOptionUnsupported(t *testing.T) {
 	result := ConfigEnvOptionsUnsupported{}
-	err := NewBuilder(&result).Env().Build()
+	err := Load(&result, Env())
 	require.Error(t, err)
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -12,6 +13,85 @@ import (
 
 	"github.com/spf13/pflag"
 )
+
+type envOptions struct {
+	prefix    string
+	keyGetter func([]string) string
+}
+
+type EnvOption interface {
+	apply(*envOptions)
+}
+
+type envOptionAdapter func(*envOptions)
+
+func (c envOptionAdapter) apply(l *envOptions) {
+	c(l)
+}
+
+func WithPrefix(prefix string) EnvOption {
+	return envOptionAdapter(func(o *envOptions) {
+		o.prefix = prefix
+	})
+}
+
+func ComputeEnvKey(keyGetter func([]string) string) EnvOption {
+	return envOptionAdapter(func(o *envOptions) {
+		o.keyGetter = keyGetter
+	})
+}
+
+func Env(opts ...EnvOption) Loader {
+	o := envOptions{
+		prefix:    "",
+		keyGetter: func(s []string) string { return "" },
+	}
+	for _, opt := range opts {
+		opt.apply(&o)
+	}
+	return LoaderFunc(func(dst interface{}) error {
+		return visitStruct(dst, func(path []string, field reflect.StructField) (interface{}, error) {
+			noPrefix := false
+			key := o.keyGetter(path)
+			targetType := field.Type
+			if tag, ok := field.Tag.Lookup("env"); ok {
+				params := strings.Split(tag, ",")
+				// Only set key if provided
+				if params[0] != "" {
+					key = params[0]
+				}
+
+				if len(params) > 1 { // If options are set, let's handle them
+					for _, param := range params[1:] {
+						// Check options for byte arrays
+						if param == "hex" || param == "base64" {
+							if targetType.Kind() != reflect.Slice || targetType.Elem().Kind() != reflect.Uint8 {
+								return nil, fmt.Errorf("unsupported option '%s' for type '%s'", params[1], targetType.String())
+							}
+							if param == "hex" {
+								targetType = reflect.TypeOf(convertBytesHexMarker{})
+							} else if param == "base64" {
+								targetType = reflect.TypeOf(convertBytesBase64Marker{})
+							}
+						}
+						if param == "noprefix" {
+							noPrefix = true
+						}
+					}
+				}
+			}
+
+			if o.prefix != "" && !noPrefix {
+				key = fmt.Sprintf("%s_%s", o.prefix, key)
+			}
+
+			if val, ok := os.LookupEnv(key); ok {
+				return convertString(targetType, val)
+			}
+			return nil, nil
+		})
+	})
+}
 
 const (
 	arrayDelimiter = ","

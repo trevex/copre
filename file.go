@@ -1,5 +1,10 @@
 package config
 
+import (
+	"io/ioutil"
+	"os"
+)
+
 type fileOptions struct {
 	ignoreNotFound bool
 	expandEnv      bool
@@ -37,5 +42,31 @@ func ExpandEnv(f ...bool) FileOption {
 			v = f[0]
 		}
 		o.expandEnv = v
+	})
+}
+
+func File(filepath string, unmarshal UnmarshalFunc, opts ...FileOption) Loader {
+	o := fileOptions{
+		ignoreNotFound: false,
+		expandEnv:      false,
+	}
+	for _, opt := range opts {
+		opt.apply(&o)
+	}
+	return LoaderFunc(func(dst interface{}) error {
+		d, err := ioutil.ReadFile(filepath)
+		if o.ignoreNotFound && os.IsNotExist(err) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		if o.expandEnv {
+			d = []byte(os.ExpandEnv(string(d)))
+		}
+		if err := unmarshal(d, dst); err != nil {
+			return err
+		}
+		return nil
 	})
 }
