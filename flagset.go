@@ -76,16 +76,24 @@ func listFlags(flags *pflag.FlagSet, includeUnchanged bool) map[string]interface
 			v, _ = flags.GetBool(flag.Name)
 		case "int":
 			v, _ = flags.GetInt(flag.Name)
+		case "intSlice":
+			v, _ = flags.GetIntSlice(flag.Name)
 		case "int8":
 			v, _ = flags.GetInt8(flag.Name)
 		case "int16":
 			v, _ = flags.GetInt16(flag.Name)
 		case "int32":
 			v, _ = flags.GetInt32(flag.Name)
+		case "int32Slice":
+			v, _ = flags.GetInt32Slice(flag.Name)
 		case "int64":
 			v, _ = flags.GetInt64(flag.Name)
+		case "int64Slice":
+			v, _ = flags.GetInt64Slice(flag.Name)
 		case "uint":
 			v, _ = flags.GetUint(flag.Name)
+		case "uintSlice":
+			v, _ = flags.GetUintSlice(flag.Name)
 		case "uint8":
 			v, _ = flags.GetUint8(flag.Name)
 		case "uint16":
@@ -104,8 +112,14 @@ func listFlags(flags *pflag.FlagSet, includeUnchanged bool) map[string]interface
 			v, _ = flags.GetFloat64Slice(flag.Name)
 		case "stringSlice":
 			v, _ = flags.GetStringSlice(flag.Name)
-		case "intSlice":
-			v, _ = flags.GetIntSlice(flag.Name)
+		case "stringArray":
+			v, _ = flags.GetStringArray(flag.Name)
+		case "stringToInt":
+			v, _ = flags.GetStringToInt(flag.Name)
+		case "stringToInt64":
+			v, _ = flags.GetStringToInt64(flag.Name)
+		case "stringToString":
+			v, _ = flags.GetStringToString(flag.Name)
 		case "bytesBase64":
 			v, _ = flags.GetBytesBase64(flag.Name)
 		case "bytesHex":
