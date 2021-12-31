@@ -16,8 +16,8 @@ type FileOption interface {
 
 type fileOptionAdapter func(*fileOptions)
 
-func (c fileOptionAdapter) apply(l *fileOptions) {
-	c(l)
+func (c fileOptionAdapter) apply(o *fileOptions) {
+	c(o)
 }
 
 // TODO: UseSearchPaths(paths []string) Option to look for a file in

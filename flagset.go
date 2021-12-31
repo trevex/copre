@@ -9,6 +9,7 @@ import (
 
 type flagSetOptions struct {
 	includeUnchanged bool
+	nameGetter       func([]string) string
 }
 
 type FlagSetOption interface {
@@ -17,25 +18,32 @@ type FlagSetOption interface {
 
 type flagSetOptionAdapter func(*flagSetOptions)
 
-func (c flagSetOptionAdapter) apply(l *flagSetOptions) {
-	c(l)
+func (c flagSetOptionAdapter) apply(o *flagSetOptions) {
+	c(o)
 }
 
 // IncludeUnchanged will also process the values of unchanged flags. Effectively
 // this means the flag defaults, if non zero, will be set as well.
 func IncludeUnchanged(f ...bool) FlagSetOption {
-	return flagSetOptionAdapter(func(l *flagSetOptions) {
+	return flagSetOptionAdapter(func(o *flagSetOptions) {
 		v := true
 		if len(f) > 0 {
 			v = f[0]
 		}
-		l.includeUnchanged = v
+		o.includeUnchanged = v
+	})
+}
+
+func ComputeFlagName(nameGetter func([]string) string) FlagSetOption {
+	return flagSetOptionAdapter(func(o *flagSetOptions) {
+		o.nameGetter = nameGetter
 	})
 }
 
 func FlagSet(flags *pflag.FlagSet, opts ...FlagSetOption) Loader {
 	o := flagSetOptions{
 		includeUnchanged: false,
+		nameGetter:       func(s []string) string { return "" },
 	}
 	for _, opt := range opts {
 		opt.apply(&o)
@@ -43,16 +51,15 @@ func FlagSet(flags *pflag.FlagSet, opts ...FlagSetOption) Loader {
 	return LoaderFunc(func(dst interface{}) error {
 		flagMap := listFlags(flags, o.includeUnchanged)
 		return visitStruct(dst, func(path []string, field reflect.StructField) (interface{}, error) {
-			tag, ok := field.Tag.Lookup("flag")
-			if !ok {
+			name := o.nameGetter(path)
+			if tag, ok := field.Tag.Lookup("flag"); ok {
+				params := strings.Split(tag, ",")
+				name = params[0]
+			}
+			if name == "" {
 				return nil, nil
 			}
-			params := strings.Split(tag, ",")
-			key := params[0]
-			if key == "" {
-				return nil, nil
-			}
-			if val, ok := flagMap[key]; ok {
+			if val, ok := flagMap[name]; ok {
 				// Mismatch is handled by visitStruct
 				return val, nil
 			}

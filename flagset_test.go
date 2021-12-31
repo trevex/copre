@@ -7,7 +7,32 @@ import (
 
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+type ComputeNameTest struct {
+	ComputedField string
+	TaggedField   string `flag:"tag"`
+}
+
+func TestFlagsetOptionComputeName(t *testing.T) {
+	require := require.New(t)
+	expected := &ComputeNameTest{
+		ComputedField: "a",
+		TaggedField:   "b",
+	}
+	result := &ComputeNameTest{}
+	f := pflag.NewFlagSet("test", pflag.ContinueOnError)
+	f.String("computed-field", "a", "")
+	f.String("tag", "b", "")
+	err := f.Parse([]string{})
+	require.NoError(err)
+	l := FlagSet(f, IncludeUnchanged(), ComputeFlagName(KebabCase))
+	err = l.Process(result)
+	require.NoError(err)
+	require.Equal(expected, result)
+
+}
 
 func TestListFlags(t *testing.T) {
 	expected := map[string]interface{}{

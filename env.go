@@ -25,8 +25,8 @@ type EnvOption interface {
 
 type envOptionAdapter func(*envOptions)
 
-func (c envOptionAdapter) apply(l *envOptions) {
-	c(l)
+func (c envOptionAdapter) apply(o *envOptions) {
+	c(o)
 }
 
 func WithPrefix(prefix string) EnvOption {
