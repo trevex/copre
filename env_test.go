@@ -2,12 +2,47 @@ package config
 
 import (
 	"net"
+	"os"
 	"reflect"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+type TestConfigEnvOptions struct {
+	A []byte `env:"NOPREFIX_A,noprefix"`
+	B []byte `env:"B,hex"`
+	C []byte `env:",base64"`
+}
+
+func TestEnvOptions(t *testing.T) {
+	require := require.New(t)
+	expected := TestConfigEnvOptions{
+		A: []byte{1, 1},
+		B: []byte{255},
+		C: []byte("1"),
+	}
+	prefix := "ENV_OPTIONS"
+	os.Setenv("NOPREFIX_A", "1,1")
+	os.Setenv(prefix+"_B", "FF")
+	os.Setenv(prefix+"_C", "MQ==")
+	result := TestConfigEnvOptions{}
+	err := Load(&result, Env(WithPrefix(prefix), ComputeEnvKey(UpperSnakeCase)))
+	require.NoError(err)
+	require.Equal(expected, result)
+}
+
+type TestConfigEnvOptionsUnsupported struct {
+	A string `env:"A,hex"`
+}
+
+func TestEnvOptionUnsupported(t *testing.T) {
+	result := TestConfigEnvOptionsUnsupported{}
+	err := Load(&result, Env())
+	require.Error(t, err)
+}
 
 func TestConvertScalars(t *testing.T) {
 	assert := assert.New(t)

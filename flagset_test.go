@@ -31,7 +31,18 @@ func TestFlagsetOptionComputeName(t *testing.T) {
 	err = l.Process(result)
 	require.NoError(err)
 	require.Equal(expected, result)
+}
 
+func TestFlagsetMismatch(t *testing.T) {
+	require := require.New(t)
+	f := pflag.NewFlagSet("test", pflag.ContinueOnError)
+	f.Int32("a", 0, "")
+	_ = f.Parse([]string{"--a=1"})
+	result := struct {
+		A string `flag:"a"`
+	}{}
+	err := Load(&result, FlagSet(f))
+	require.Error(err)
 }
 
 func TestListFlags(t *testing.T) {
