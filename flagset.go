@@ -50,7 +50,7 @@ func FlagSet(flags *pflag.FlagSet, opts ...FlagSetOption) Loader {
 	}
 	return LoaderFunc(func(dst interface{}) error {
 		flagMap := listFlags(flags, o.includeUnchanged)
-		return visitStruct(dst, func(path []string, field reflect.StructField) (interface{}, error) {
+		return StructWalk(dst, func(path []string, field reflect.StructField) (interface{}, error) {
 			name := o.nameGetter(path)
 			if tag, ok := field.Tag.Lookup("flag"); ok {
 				params := strings.Split(tag, ",")

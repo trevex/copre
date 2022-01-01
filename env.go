@@ -50,7 +50,7 @@ func Env(opts ...EnvOption) Loader {
 		opt.apply(&o)
 	}
 	return LoaderFunc(func(dst interface{}) error {
-		return visitStruct(dst, func(path []string, field reflect.StructField) (interface{}, error) {
+		return StructWalk(dst, func(path []string, field reflect.StructField) (interface{}, error) {
 			noPrefix := false
 			key := o.keyGetter(path)
 			targetType := field.Type
