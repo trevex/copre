@@ -20,7 +20,7 @@ The main entrypoint to loading configuration is the `Load`-function.
 The first argument is the pointer to the struct you want to populate and the rest a variadic list of `Loader` to process.
 
 A simple example could look like this:
-```
+```go
 type Config struct {
     Foo string `env:"FOO" flag:"foo" yaml:"foo"`
     Bar string `env:"BAR" flag:"bar" yaml:"bar"`
@@ -29,8 +29,7 @@ type Config struct {
 
 // ...
 cfg := Config{ Foo: "myDefaultValue" }
-err := copre.Load(
-    &cfg,
+err := copre.Load(&cfg,
     copre.File("/etc/myapp/config.yaml", yaml.Unmarshal, copre.IgnoreNotFound()),
     copre.Flag(flags), // assuming flags were setup prior
     copre.Env(copre.WithPrefix("MYAPP")), // by default no prefix, so let's set it explicitly
