@@ -15,6 +15,7 @@ import (
 )
 
 type envOptions struct {
+	tag       string
 	prefix    string
 	keyGetter func([]string) string
 }
@@ -41,8 +42,15 @@ func ComputeEnvKey(keyGetter func([]string) string) EnvOption {
 	})
 }
 
+func OverrideEnvTag(tag string) EnvOption {
+	return envOptionAdapter(func(o *envOptions) {
+		o.tag = tag
+	})
+}
+
 func Env(opts ...EnvOption) Loader {
 	o := envOptions{
+		tag:       "env",
 		prefix:    "",
 		keyGetter: func(s []string) string { return "" },
 	}
@@ -54,7 +62,7 @@ func Env(opts ...EnvOption) Loader {
 			noPrefix := false
 			key := o.keyGetter(path)
 			targetType := field.Type
-			if tag, ok := field.Tag.Lookup("env"); ok {
+			if tag, ok := field.Tag.Lookup(o.tag); ok {
 				params := strings.Split(tag, ",")
 				// Only set key if provided
 				if params[0] != "" {

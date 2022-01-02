@@ -8,6 +8,7 @@ import (
 )
 
 type flagSetOptions struct {
+	tag              string
 	includeUnchanged bool
 	nameGetter       func([]string) string
 }
@@ -46,8 +47,15 @@ func ComputeFlagName(nameGetter func([]string) string) FlagSetOption {
 	})
 }
 
+func OverrideFlagTag(tag string) FlagSetOption {
+	return flagSetOptionAdapter(func(o *flagSetOptions) {
+		o.tag = tag
+	})
+}
+
 func FlagSet(flags *pflag.FlagSet, opts ...FlagSetOption) Loader {
 	o := flagSetOptions{
+		tag:              "flag",
 		includeUnchanged: false,
 		nameGetter:       func(s []string) string { return "" },
 	}
@@ -58,7 +66,7 @@ func FlagSet(flags *pflag.FlagSet, opts ...FlagSetOption) Loader {
 		flagMap := listFlags(flags, o.includeUnchanged)
 		return StructWalk(dst, func(path []string, field reflect.StructField) (interface{}, error) {
 			name := o.nameGetter(path)
-			if tag, ok := field.Tag.Lookup("flag"); ok {
+			if tag, ok := field.Tag.Lookup(o.tag); ok {
 				params := strings.Split(tag, ",")
 				name = params[0]
 			}
