@@ -8,7 +8,8 @@ import (
 )
 
 // Loader is the interface that needs to be implemented to be able to load
-// configuration from a configuration source. See Env, File or FlagSet for examples.
+// configuration from a configuration source. See Env, File or FlagSet for
+// the implementations provided by this library.
 // They only have to implement a single method Process, which populates the
 // passed-in configuration-struct dst and returns an error if problems occur.
 type Loader interface {

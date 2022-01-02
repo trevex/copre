@@ -12,6 +12,7 @@ type flagSetOptions struct {
 	nameGetter       func([]string) string
 }
 
+// FlagSetOption configures how a FlagSet is used to populate a given structure.
 type FlagSetOption interface {
 	apply(*flagSetOptions)
 }
@@ -34,6 +35,11 @@ func IncludeUnchanged(f ...bool) FlagSetOption {
 	})
 }
 
+// ComputeFlagName will remove the requirement to explicitly specify the
+// flag-name with a tag. For all fields not explicitly tagged, the name
+// will be computed based on the path by the provided nameGetter function.
+// For example:
+//  ComputeFlagName(KebabCase)
 func ComputeFlagName(nameGetter func([]string) string) FlagSetOption {
 	return flagSetOptionAdapter(func(o *flagSetOptions) {
 		o.nameGetter = nameGetter
@@ -60,7 +66,7 @@ func FlagSet(flags *pflag.FlagSet, opts ...FlagSetOption) Loader {
 				return nil, nil
 			}
 			if val, ok := flagMap[name]; ok {
-				// Mismatch is handled by visitStruct
+				// Mismatch is handled by StructWalk
 				return val, nil
 			}
 			return nil, nil
@@ -72,8 +78,7 @@ func FlagSet(flags *pflag.FlagSet, opts ...FlagSetOption) Loader {
 func listFlags(flags *pflag.FlagSet, includeUnchanged bool) map[string]interface{} {
 	flagMap := map[string]interface{}{}
 	flags.VisitAll(func(flag *pflag.Flag) {
-		// If neither includeUnchanged is set nor useFlagDefaults, we have
-		// to return and ignore the unchanged flag
+		// If includeUnchanged is not set, we have to return and ignore the unchanged flag
 		if !flag.Changed && !includeUnchanged {
 			return
 		}
