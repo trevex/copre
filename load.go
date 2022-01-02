@@ -10,7 +10,7 @@ import (
 // Loader is the interface that needs to be implemented to be able to load
 // configuration from a configuration source. See Env, File or FlagSet for examples.
 // They only have to implement a single method Process, which populates the
-// confugration struct dst or returns an error if problems occur.
+// passed-in configuration-struct dst and returns an error if problems occur.
 type Loader interface {
 	Process(dst interface{}) error
 }
@@ -24,7 +24,7 @@ func (fn LoaderFunc) Process(dst interface{}) error {
 }
 
 // Load is the central function tying all the building blocks together.
-// It allows the composition of the loader precendence.
+// It allows the composition of the loader precedence.
 // For a given pointer to struct dst, an empty instantiation of the same type
 // is create for each loader. Each loader populates its copy and all copies are
 // merged into dst in the specified order.
