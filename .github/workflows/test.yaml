@@ -21,8 +21,6 @@ jobs:
       uses: actions/setup-go@v2
       with:
         go-version: ${{ matrix.go-version }}
-    - name: Install make
-      run: sudo apt-get install -y make
     - name: Checkout code
       uses: actions/checkout@v2
     - uses: actions/cache@v2
