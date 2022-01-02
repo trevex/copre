@@ -1,6 +1,10 @@
 # `copre`
 
-`copre` is a small library for loading **co**nfiguration from multiple sources with a user-defined **pre**cedence. The sources include [`pflags`](https://github.com/spf13/pflag), environment-variables and files (bring your own file-format).
+[![Go Report Card](https://goreportcard.com/badge/github.com/trevex/copre)](https://goreportcard.com/report/github.com/trevex/copre)
+[![PkgGoDev](https://pkg.go.dev/badge/mod/github.com/trevex/copre)](https://pkg.go.dev/mod/github.com/trevex/copre)
+
+
+`copre` is a small library for loading **co**nfiguration from multiple sources with a user-defined **pre**cedence and merging them. The sources include [`pflags`](https://github.com/spf13/pflag), environment-variables and files (bring your own file-format).
 
 ## Overview
 
@@ -10,9 +14,15 @@ With `copre` it is straightforward to express how your configuration should be l
 
 * One-way to populate a configuration `struct`
 * Struct-tags to specify options for environment variables and flags
-* Minimal defaults, opt-in to features using options
+* Minimal defaults, opt-in to features using options instead (intentionally explicit)
 * Flexible `Loader`-composition as many passes as required (see example Y)
 * Easy to extend (see example X)
+
+## Install
+
+```
+go get github.com/trevex/copre
+```
 
 ## Quickstart
 
@@ -30,7 +40,7 @@ type Config struct {
 // ...
 cfg := Config{ Foo: "myDefaultValue" }
 err := copre.Load(&cfg,
-    copre.File("/etc/myapp/config.yaml", yaml.Unmarshal, copre.IgnoreNotFound()),
+    copre.File("config.yaml", yaml.Unmarshal, copre.IgnoreNotFound()),
     copre.Flag(flags), // assuming flags were setup prior
     copre.Env(copre.WithPrefix("MYAPP")), // by default no prefix, so let's set it explicitly
 )
@@ -39,11 +49,17 @@ As no advanced options are used, `env` and `flag` struct-tags have to be explici
 if a field should be populated from those sources. However if an environment variable is not set or a flag with the corresponding name does not exist or has an empty value (e.g. empty string), the field will remain untouched. Therefore if no `Loader` sets a specific field, a value set prior to loading will remail in place (e.g. `Foo`).
 In the above example the configuration-file to be loaded is optional as `copre.IgnoreNotFound()` was set.
 
+If you want to learn more about `copre`, checkout the examples below or the API documentation.
 
-Finally let's have a look at a totally over the top example:
+## Examples
 
+### Using options
 
-## Motivation
+### Custom `Loader`
+
+## Q & A
+
+### Motivation
 
 Depending on the application domain the precedence of loading configuration can differ.
 For example a CLI tool might have a precendence such as `flags > env > file`.
