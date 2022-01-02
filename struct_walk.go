@@ -8,9 +8,13 @@ import (
 	"github.com/mitchellh/reflectwalk"
 )
 
-// FieldMapper is called for each field, must return values
+// FieldMapper is a function that takes the path of a field in a nested structure
+// and field itself, to return a value or an error.
 type FieldMapper func(path []string, field reflect.StructField) (interface{}, error)
 
+// StructWalk walks/visits every field of a struct (including nested) and calls
+// fieldMapper for every field. If an internal error is encountered or an error
+// is returned by fieldMapper it is immediately returned and traversal stopped.
 func StructWalk(dst interface{}, fieldMapper FieldMapper) error {
 	w := &structWalker{
 		Path:        []string{},

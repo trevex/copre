@@ -7,6 +7,9 @@ import (
 	"github.com/fatih/camelcase"
 )
 
+// UpperSnakeCase takes the path to a struct-field and returns it in UpperSnakeCase.
+// For example:
+//  UpperSnakeCase([]string{"Document","HTMLParser"}) // returns DOCUMENT_HTML_PARSER
 func UpperSnakeCase(path []string) string {
 	return strings.ToUpper(strings.Join(SplitPathIntoWords(path), "_"))
 }
