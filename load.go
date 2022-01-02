@@ -7,19 +7,29 @@ import (
 	"github.com/imdario/mergo"
 )
 
-type UnmarshalFunc func(data []byte, dst interface{}) error
-
-// Loaders are chained by Builder to populate the given struct.
+// Loader is the interface that needs to be implemented to be able to load
+// configuration from a configuration source. See Env, File or FlagSet for examples.
+// They only have to implement a single method Process, which populates the
+// confugration struct dst or returns an error if problems occur.
 type Loader interface {
 	Process(dst interface{}) error
 }
 
+// LoaderFunc implements the Loader interface for a individual functions.
 type LoaderFunc func(dst interface{}) error
 
+// Process calls the LoaderFunc underneath.
 func (fn LoaderFunc) Process(dst interface{}) error {
 	return fn(dst)
 }
 
+// Load is the central function tying all the building blocks together.
+// It allows the composition of the loader precendence.
+// For a given pointer to struct dst, an empty instantiation of the same type
+// is create for each loader. Each loader populates its copy and all copies are
+// merged into dst in the specified order.
+//
+// See the README for several examples.
 func Load(dst interface{}, loaders ...Loader) error {
 	// Make sure dst is a pointer to struct
 	v := reflect.ValueOf(dst)

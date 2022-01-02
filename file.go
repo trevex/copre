@@ -60,6 +60,8 @@ func ExpandEnv(f ...bool) FileOption {
 	})
 }
 
+type UnmarshalFunc func(data []byte, dst interface{}) error
+
 func File(filepath string, unmarshal UnmarshalFunc, opts ...FileOption) Loader {
 	o := fileOptions{
 		ignoreNotFound: false,
