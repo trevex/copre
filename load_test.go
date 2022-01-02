@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -10,14 +11,13 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v2"
 )
 
 type TestConfigAllSources struct {
-	A string `yaml:"a" env:"A" flag:"a"`
-	B string `yaml:"b" env:"B" flag:"b"`
-	C string `yaml:"c" env:"C" flag:"c"`
-	D string `yaml:"d" env:"D" flag:"d"`
+	A string `json:"a" env:"A" flag:"a"`
+	B string `json:"b" env:"B" flag:"b"`
+	C string `json:"c" env:"C" flag:"c"`
+	D string `json:"d" env:"D" flag:"d"`
 }
 
 func TestLoaderPrecendence(t *testing.T) {
@@ -25,18 +25,18 @@ func TestLoaderPrecendence(t *testing.T) {
 	require := require.New(t)
 
 	tests := map[string]struct {
-		Yaml     string
+		JSON     string
 		Flags    map[string]string
 		EnvVars  map[string]string
 		Input    TestConfigAllSources
 		Expected TestConfigAllSources
 	}{
 		"file<flag<env": {
-			Yaml: `
-a: "file"
-b: "file"
-c: "file"
-`,
+			JSON: `{
+	"a": "file",
+	"b": "file",
+	"c": "file"
+}`,
 			Flags: map[string]string{
 				"b": "flag",
 				"c": "flag",
@@ -60,10 +60,10 @@ c: "file"
 				"B": "env",
 				"C": "env",
 			},
-			Yaml: `
-b: "file"
-c: "file"
-`,
+			JSON: `{
+	"b": "file",
+	"c": "file"
+}`,
 			Flags: map[string]string{
 				"c": "flag",
 			},
@@ -87,9 +87,7 @@ c: "file"
 				"B": "env",
 				"C": "env",
 			},
-			Yaml: `
-c: "file"
-`,
+			JSON: `{ "c": "file" }`,
 			Input: TestConfigAllSources{
 				D: "struct",
 			},
@@ -109,7 +107,7 @@ c: "file"
 			tf, err := ioutil.TempFile("", "test")
 			require.NoError(err)
 			defer os.Remove(tf.Name())
-			_, err = tf.WriteString(test.Yaml)
+			_, err = tf.WriteString(test.JSON)
 			require.NoError(err)
 			// Prepare FlagSet
 			f := pflag.NewFlagSet("test", pflag.ContinueOnError)
@@ -128,7 +126,7 @@ c: "file"
 			loaders := []Loader{}
 			for _, phase := range buildOrder {
 				if phase == "file" {
-					loaders = append(loaders, File(tf.Name(), yaml.Unmarshal))
+					loaders = append(loaders, File(tf.Name(), json.Unmarshal))
 				} else if phase == "flag" {
 					loaders = append(loaders, FlagSet(f))
 				} else {
