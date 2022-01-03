@@ -13,7 +13,7 @@ type flagSetOptions struct {
 	nameGetter       func([]string) string
 }
 
-// FlagSetOption configures how a FlagSet is used to populate a given structure.
+// FlagSetOption configures how a pflag.FlagSet is used to populate a given structure.
 type FlagSetOption interface {
 	apply(*flagSetOptions)
 }
@@ -47,12 +47,29 @@ func ComputeFlagName(nameGetter func([]string) string) FlagSetOption {
 	})
 }
 
+// OverrideFlagTag will change the struct-tag used to retrieve the flag name.
+// The main purpose of this option is to allow interoperability with libraries
+// using the same tag.
+//
+// However it can also be used to enable edge-cases where multiple flags are used
+// to populate the same field.
 func OverrideFlagTag(tag string) FlagSetOption {
 	return flagSetOptionAdapter(func(o *flagSetOptions) {
 		o.tag = tag
 	})
 }
 
+// FlagSet implements a Loader, that takes a pflag.FlagSet and uses those to
+// retrieve configuration values.
+//
+// Standalone usage example:
+//  flags := pflag.NewFlagSet("test", pflag.ContinueOnError)
+//  flags.String("foo-bar", "hello", "")
+//  err := flags.Parse([]string{})
+//  // ...
+//  cfg := struct{ FooBar string }{}
+//  loader := FlagSet(flags, IncludeUnchanged(), ComputeFlagName(KebabCase))
+//  err = l.Process(&cfg) // cfg.FooBar will have the default value of the flag "hello"
 func FlagSet(flags *pflag.FlagSet, opts ...FlagSetOption) Loader {
 	o := flagSetOptions{
 		tag:              "flag",
@@ -83,6 +100,10 @@ func FlagSet(flags *pflag.FlagSet, opts ...FlagSetOption) Loader {
 	})
 }
 
+// listFlags will visit all flags of the pflag.FlagSet and return them as map
+// with their values.
+// If includeUnchanged is true, it will also return unchanged flags and therefore
+// their defaults.
 func listFlags(flags *pflag.FlagSet, includeUnchanged bool) map[string]interface{} {
 	flagMap := map[string]interface{}{}
 	flags.VisitAll(func(flag *pflag.Flag) {
