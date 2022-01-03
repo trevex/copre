@@ -20,6 +20,7 @@ type envOptions struct {
 	keyGetter func([]string) string
 }
 
+// EnvOption configures how environment variables are used to populate a given structure.
 type EnvOption interface {
 	apply(*envOptions)
 }
@@ -30,24 +31,49 @@ func (c envOptionAdapter) apply(o *envOptions) {
 	c(o)
 }
 
+// WithPrefix will prefix environment variable names with the specified value unless noprefix option is set in the tag.
 func WithPrefix(prefix string) EnvOption {
 	return envOptionAdapter(func(o *envOptions) {
 		o.prefix = prefix
 	})
 }
 
+// ComputeEnvKey will remove the requirement to explicitly specify the
+// env-key with a tag. For all fields not explicitly tagged, the name
+// will be computed based on the path by the provided nameGetter function.
+// For example:
+//  ComputeEnvKey(UpperSnakeCase)
 func ComputeEnvKey(keyGetter func([]string) string) EnvOption {
 	return envOptionAdapter(func(o *envOptions) {
 		o.keyGetter = keyGetter
 	})
 }
 
+// OverrideEnvTag will change the struct-tag used to retrieve the env-key and options.
+// The main purpose of this option is to allow interoperability with libraries
+// using the same tag.
+//
+// However it can also be used to enable edge-cases where multiple sets of environment
+// variables are used to populate the same field.
 func OverrideEnvTag(tag string) EnvOption {
 	return envOptionAdapter(func(o *envOptions) {
+		if tag == "" {
+			tag = "env"
+		}
 		o.tag = tag
 	})
 }
 
+// Env implements a Loader, that uses environment variables to retrieve
+// configuration values.
+//
+// Standalone usage example:
+//  cfg := struct{ // Illustrating some ways to load bytes from env
+//		A []byte `env:"NOPREFIX_A,noprefix"`
+//		B []byte `env:"MYPREFIX_B,hex"`
+//		C []byte `env:",base64"`
+//  }{}
+//  err := Env(WithPrefix("MYPREFIX"), ComputeEnvKey(UpperSnakeCase)).Process(&cfg)
 func Env(opts ...EnvOption) Loader {
 	o := envOptions{
 		tag:       "env",

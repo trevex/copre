@@ -55,6 +55,9 @@ func ComputeFlagName(nameGetter func([]string) string) FlagSetOption {
 // to populate the same field.
 func OverrideFlagTag(tag string) FlagSetOption {
 	return flagSetOptionAdapter(func(o *flagSetOptions) {
+		if tag == "" {
+			tag = "flag"
+		}
 		o.tag = tag
 	})
 }

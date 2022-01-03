@@ -34,8 +34,8 @@ func TestFileOptions(t *testing.T) {
 		require.NoError(err)
 	}
 	fa := filepath.Join(pa, "d.json")
-	fb := filepath.Join(pb, "d.json")
-	fc := filepath.Join(pc, "d.json")
+	fb := filepath.Join(pb, "e.json")
+	fc := filepath.Join(pc, "f.json")
 
 	err = os.WriteFile(fa, []byte(`{ "a": "a"}`), 0600)
 	require.NoError(err)
@@ -47,7 +47,7 @@ func TestFileOptions(t *testing.T) {
 	t.Run("MergeAll", func(t *testing.T) {
 		result := TestConfigFileOptions{}
 		err = File(fa, json.Unmarshal,
-			UseSearchPaths(pb, pc),
+			AppendFilePaths(fb, fc),
 			MergeFiles(),
 		).Process(&result)
 		require.NoError(err)
@@ -58,7 +58,7 @@ func TestFileOptions(t *testing.T) {
 	t.Run("FirstFound", func(t *testing.T) {
 		result := TestConfigFileOptions{}
 		err = File(fa, json.Unmarshal,
-			UseSearchPaths(pb, pc),
+			AppendFilePaths(fb, fc),
 		).Process(&result)
 		require.NoError(err)
 		assert.Equal("a", result.A)
