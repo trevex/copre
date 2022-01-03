@@ -1,4 +1,4 @@
-package config
+package copre
 
 import (
 	"encoding/json"
