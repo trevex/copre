@@ -82,7 +82,7 @@ type Config struct {
 	// So will be set by DATA rather than EXAMPLE_DATA
 	Data    []byte `env:"DATA,noprefix,base64" flag:"data" yaml:"data"`
 	Default string `env:"DEFAULT" yaml:"default"`
-	Special string `superenv:"SPECIAL" flag:"special"`
+	Special string `superenv:"SUPERSPECIAL" flag:"special"`
 }
 
 func main() {
@@ -101,7 +101,7 @@ func main() {
 		panic(err)
 	}
 	os.Setenv("DATA", "MQ==")
-	os.Setenv("SPECIAL", "bar")
+	os.Setenv("SUPERSPECIAL", "bar")
 
 	// Let's load the config
 	err = copre.Load(&cfg,
