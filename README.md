@@ -3,6 +3,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/trevex/copre)](https://goreportcard.com/report/github.com/trevex/copre)
 [![PkgGoDev](https://pkg.go.dev/badge/mod/github.com/trevex/copre)](https://pkg.go.dev/mod/github.com/trevex/copre)
 [![Github Actions](https://github.com/trevex/copre/actions/workflows/tests.yaml/badge.svg)](https://github.com/trevex/copre/actions)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ftrevex%2Fcopre.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Ftrevex%2Fcopre?ref=badge_shield)
 
 
 
@@ -69,3 +70,7 @@ However services run in a container might prefer a precendence similar to `env >
 
 At the end of the day the Go ecosystem had plenty options to load configuration,
 but not to compose its precendence, so hopefully this library accomodates that.
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ftrevex%2Fcopre.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Ftrevex%2Fcopre?ref=badge_large)
