@@ -145,11 +145,44 @@ func main() {
 }
 ```
 
-### Validating configuration
-
 ### Custom `Loader`
 
-### Using Kubernetes ConfigMap
+The following example is fairly basic, but should give you an idea how to implement `Loader`. The example uses [kelseyhightower/envconfig](https://github.com/kelseyhightower/envconfig) rather than the inbuilt `Env`-loader:
+```go
+package main
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/kelseyhightower/envconfig"
+	"github.com/trevex/copre"
+)
+
+type Config struct {
+	Debug bool
+	Port  int
+}
+
+func main() {
+	cfg := Config{}
+	// Let's setup our environment
+	os.Setenv("MYAPP_DEBUG", "true")
+	os.Setenv("MYAPP_PORT", "8080")
+
+	// Load but use a custom loader (for simplicity only one loader)
+	err := copre.Load(&cfg, copre.LoaderFunc(func(dst interface{}) error {
+		return envconfig.Process("myapp", dst)
+	}))
+
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("%+v\n", cfg)
+	// Prints: {Debug:true Port:8080}
+}
+```
 
 ## Q & A
 
@@ -161,3 +194,7 @@ However services run in a container might prefer a precendence similar to `env >
 
 At the end of the day the Go ecosystem had plenty options to load configuration,
 but not to compose its precendence, so hopefully this library accomodates that.
+
+### Validate configuration?
+
+Validation is not in scope of `copre`. Depending on your use-case it might make sense sense to write code validating your configuration. Alternatively there are libraries that can validate it for you (e.g. [go-playground/validator](https://github.com/go-playground/validator) or [go-validator/validator](https://github.com/go-validator/validator)).
