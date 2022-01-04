@@ -1,20 +1,22 @@
 on: [push, pull_request]
 name: tests
 jobs:
-  golangci:
-    name: lint
+  golangci-lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: golangci-lint
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v2
         with:
           version: latest
   fossa-scan:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: fossas/fossa-action@main
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Run fossa analyze
+        uses: fossas/fossa-action@main
         with:
           api-key: ${{ secrets.FOSSA_API_KEY }}
   test:
