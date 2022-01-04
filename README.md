@@ -44,7 +44,7 @@ type Config struct {
 // ...
 cfg := Config{ Foo: "myDefaultValue" }
 err := copre.Load(&cfg,
-    copre.File("config.yaml", yaml.Unmarshal, copre.IgnoreNotFound()),
+    copre.File("./config.yaml", yaml.Unmarshal, copre.IgnoreNotFound()),
     copre.Flag(flags), // assuming flags were setup prior
     copre.Env(copre.WithPrefix("MYAPP")), // by default no prefix, so let's set it explicitly
 )
@@ -58,6 +58,92 @@ If you want to learn more about `copre`, checkout the examples below or the [API
 ## Examples
 
 ### Using options
+
+This example shows off lots of options and hopefully illustrates how you can use
+options to make `copre` the glue that composes your configuration:
+```go
+package main
+
+import (
+	"fmt"
+	"net"
+	"os"
+
+	"github.com/spf13/pflag"
+	"github.com/trevex/copre"
+	"gopkg.in/yaml.v3"
+)
+
+type Config struct {
+	// Copre at least aims to support the same types as pflag for environment variables
+	ListenIP   net.IP `flag:"listen-ip" env:"LISTEN_IP" yaml:"listenIP"`
+	ListenPort int    `yaml:"listenPort"`
+	// The Data field will not use a prefix for its environment variable!
+	// So will be set by DATA rather than EXAMPLE_DATA
+	Data    []byte `env:"DATA,noprefix,base64" flag:"data" yaml:"data"`
+	Default string `env:"DEFAULT" yaml:"default"`
+	Special string `superenv:"SPECIAL" flag:"special"`
+}
+
+func main() {
+	cfg := Config{Default: "default"}
+
+	flags := pflag.NewFlagSet("", pflag.ContinueOnError)
+	flags.IP("listen-ip", net.IPv4(127, 0, 0, 1), "")
+	flags.Int("listen-port", 8080, "")
+	flags.BytesBase64("data", []byte{}, "")
+	flags.String("default", "", "")
+	flags.String("special", "", "")
+
+	// For this example we provide some input data ourselves:
+	err := flags.Parse([]string{"--listen-port=9090", "--special=foo"})
+	if err != nil {
+		panic(err)
+	}
+	os.Setenv("DATA", "MQ==")
+	os.Setenv("SPECIAL", "bar")
+
+	// Let's load the config
+	err = copre.Load(&cfg,
+		// Okay, here is a little trick, we want to use the pflag defaults in our struct.
+		// So we run our first pass over the flags with IncludeUnchanged and later without.
+		copre.FlagSet(flags,
+			copre.IncludeUnchanged(),
+			// Compute flag names for fields without a "flag"-tag using kebab-case
+			copre.ComputeFlagName(copre.KebabCase),
+		),
+		copre.File( // We need at least one file and the unmarshal function
+			"./first.yaml", yaml.Unmarshal,
+			// But we can add more files to check
+			copre.AppendFilePaths("./second.yaml", "./third.yaml"),
+			// By default the first will be unmarshalled, but we can also merge all available files
+			copre.MergeFiles(),
+			// We can provide the following option if no file is okay as well
+			copre.IgnoreNotFound(),
+		),
+		copre.Env(
+			// Prefix all environment variables retrieved with EXAMPLE unless noprefix is set in tag
+			copre.WithPrefix("EXAMPLE"),
+			// Compute environment variable names for fields without "env"-tag
+			copre.ComputeEnvKey(copre.UpperSnakeCase),
+		),
+		copre.FlagSet(flags, copre.ComputeFlagName(copre.KebabCase)),
+		copre.Env(
+			// You can also change the tag used, to allow multiple sets of precedences
+			// or avoid compatiblity issues with other libraries
+			copre.OverrideEnvTag("superenv"), // NOTE: similar functionality exists for flags
+		),
+	)
+
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("%+v\n", cfg)
+	// Prints:
+	// {ListenIP:127.0.0.1 ListenPort:9090 Data:[49] Default:default Special:bar}
+}
+```
 
 ### Validating configuration
 
