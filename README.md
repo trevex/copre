@@ -6,9 +6,9 @@
 [![codecov](https://codecov.io/gh/trevex/copre/branch/main/graph/badge.svg?token=BMKV7KD2M8)](https://codecov.io/gh/trevex/copre)
 [![FOSSA Status](https://app.fossa.com/api/projects/custom%2B29362%2Fgithub.com%2Ftrevex%2Fcopre.svg?type=shield)](https://app.fossa.com/projects/custom%2B29362%2Fgithub.com%2Ftrevex%2Fcopre?ref=badge_shield)
 
-
-
 `copre` is a small library for loading **co**nfiguration from multiple sources with a user-defined **pre**cedence and merging them. The sources include [`pflags`](https://github.com/spf13/pflag), environment-variables and files (bring your own file-format).
+
+While `copre` can be used standalone with only `pflags`. It was created to accomodate existing projects also utilizing [`cobra`](https://github.com/spf13/cobra).
 
 ## Overview
 
@@ -19,8 +19,8 @@ With `copre` it is straightforward to express how your configuration should be l
 * One-way to populate a configuration `struct`
 * Struct-tags to specify options for environment variables and flags
 * Minimal defaults, opt-in to features using options instead (intentionally explicit)
-* Flexible `Loader`-composition as many passes as required (see example Y)
-* Easy to extend (see example X)
+* Flexible `Loader`-composition as many passes as required (see example [Using options](https://github.com/trevex/copre#using-options))
+* Easy to extend (see example [Custom `Loader`](https://github.com/trevex/copre#custom-loader))
 
 ## Install
 
